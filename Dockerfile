@@ -8,10 +8,11 @@
 #  For a VPS or any platform that runs Docker Compose, prefer docker-compose.yml
 #  (lighter to operate, closer to a real deployment).
 # =============================================================================
-# Debian (glibc) base - required for Wazuh's .deb packages. Smaller than ubuntu,
-# which also tends to pull more reliably. (Alpine is NOT usable: musl libc + apk
-# are incompatible with Wazuh packages.)
-FROM debian:12-slim
+# Debian (glibc) base - required for Wazuh's .deb packages.
+# Pulled via Google's Docker Hub mirror (mirror.gcr.io) instead of Docker Hub
+# directly, because the build host can't reach Docker Hub's AWS CloudFront CDN.
+# Same image as docker.io/library/debian:12-slim, different network path.
+FROM mirror.gcr.io/library/debian:12-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 
