@@ -1,0 +1,10 @@
+.git
+.gitignore
+docs
+setup.sh
+generate-indexer-certs.yml
+docker-compose.yml
+docker-compose.override.yml
+**/__pycache__
+*.pyc
+.DS_Store

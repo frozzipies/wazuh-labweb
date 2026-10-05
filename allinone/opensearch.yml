@@ -1,0 +1,36 @@
+---
+# Wazuh indexer config for the all-in-one container.
+# Binds to loopback + single-node discovery so OpenSearch does NOT enforce
+# bootstrap checks (notably vm.max_map_count) - important on PaaS hosts where
+# we can't set sysctl. All components talk to it over 127.0.0.1 via /etc/hosts
+# aliases, so the cert SAN "wazuh.indexer" still matches.
+network.host: "127.0.0.1"
+node.name: "wazuh.indexer"
+discovery.type: single-node
+path.data: /var/lib/wazuh-indexer
+path.logs: /var/log/wazuh-indexer
+bootstrap.memory_lock: false
+
+plugins.security.ssl.transport.pemcert_filepath: /etc/wazuh-indexer/certs/indexer.pem
+plugins.security.ssl.transport.pemkey_filepath: /etc/wazuh-indexer/certs/indexer-key.pem
+plugins.security.ssl.transport.pemtrustedcas_filepath: /etc/wazuh-indexer/certs/root-ca.pem
+plugins.security.ssl.transport.enforce_hostname_verification: false
+plugins.security.ssl.transport.resolve_hostname: false
+plugins.security.ssl.http.enabled: true
+plugins.security.ssl.http.pemcert_filepath: /etc/wazuh-indexer/certs/indexer.pem
+plugins.security.ssl.http.pemkey_filepath: /etc/wazuh-indexer/certs/indexer-key.pem
+plugins.security.ssl.http.pemtrustedcas_filepath: /etc/wazuh-indexer/certs/root-ca.pem
+plugins.security.ssl.http.clientauth_mode: OPTIONAL
+plugins.security.authcz.admin_dn:
+  - "CN=admin,OU=Wazuh,O=Wazuh,L=California,C=US"
+plugins.security.nodes_dn:
+  - "CN=wazuh.indexer,OU=Wazuh,O=Wazuh,L=California,C=US"
+plugins.security.allow_default_init_securityindex: true
+plugins.security.check_snapshot_restore_write_privileges: true
+plugins.security.enable_snapshot_restore_privilege: true
+plugins.security.system_indices.enabled: true
+plugins.security.system_indices.indices: [".opendistro-alerting-config", ".opendistro-alerting-alert*", ".opendistro-anomaly-results*", ".opendistro-anomaly-detector*", ".opendistro-anomaly-checkpoints", ".opendistro-anomaly-detection-state", ".opendistro-reports-*", ".opendistro-notifications-*", ".opendistro-notebooks", ".opensearch-observability", ".opendistro-asynchronous-search-response*", ".replication-metadata-store"]
+plugins.security.restapi.roles_enabled:
+  - "all_access"
+  - "security_rest_api_access"
+compatibility.override_main_response_version: true

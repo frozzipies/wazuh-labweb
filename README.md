@@ -130,6 +130,26 @@ These platforms default to a **single-container Nixpacks build**, which will
 > error, set `vm.max_map_count=262144` in ngelinx's host/kernel settings. Give
 > the app **~4 GB RAM** (or lower the heap — see below).
 
+### ngelinx — single container (Application + Dockerfile)
+
+If you can't use the Compose type, there's a root **`Dockerfile`** that bundles
+the whole stack (indexer + manager + dashboard + seeder) into **one container**.
+ngelinx's default "Application" build auto-detects it (no more Nixpacks error).
+
+1. **New service → Application** (the default), repo `ginasahel/labweb`, branch `main`.
+2. ngelinx detects the `Dockerfile` and builds it (first build is long — it
+   installs Wazuh; several minutes).
+3. **App / container port: `5601`** (the dashboard; HTTPS). Map your domain to it.
+4. Give the app **~4 GB RAM**. The indexer binds loopback + single-node, so the
+   `vm.max_map_count` kernel setting is **not** required (bootstrap checks are
+   skipped) — one less thing to configure on the PaaS.
+5. Open the domain → `admin` / `SecretPassword` → **Discover** → `wazuh-alerts-*`.
+
+> Trade-offs of the single container: heavier, and if the manager/API don't come
+> up on a given host you still get a working **Discover** view over the seeded
+> attack data (the dataset and its field mappings are loaded independently of the
+> manager). The multi-container Compose route is the lighter, more faithful one.
+
 ### VPS / self-managed Docker host
 
 `./setup.sh` (or `docker compose up -d --build`). Ensure
