@@ -21,8 +21,9 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
       curl gnupg apt-transport-https lsb-release adduser procps ca-certificates \
       python3 openssl tar \
- && printf '#!/bin/sh\nexit 0\n' > /usr/bin/systemctl && chmod +x /usr/bin/systemctl \
- && printf '#!/bin/sh\nexit 0\n' > /usr/sbin/service   && chmod +x /usr/sbin/service \
+ && printf '#!/bin/sh\ncase "$1" in\n  is-active|is-enabled|is-failed|status) exit 1 ;;\n  *) exit 0 ;;\nesac\n' > /usr/bin/systemctl \
+ && chmod +x /usr/bin/systemctl \
+ && printf '#!/bin/sh\nexit 0\n' > /usr/sbin/service && chmod +x /usr/sbin/service \
  && rm -rf /var/lib/apt/lists/*
 
 # Wazuh APT repository.
@@ -33,7 +34,10 @@ RUN curl -s https://packages.wazuh.com/key/GPG-KEY-WAZUH | \
       > /etc/apt/sources.list.d/wazuh.list
 
 # Install all three Wazuh components + Filebeat, pinned to 4.12.0.
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Pre-create the config dirs so the packages' pre-install scripts can write
+# their state files on this fresh (systemd-less) base.
+RUN mkdir -p /etc/wazuh-indexer /etc/filebeat /etc/wazuh-dashboard \
+ && apt-get update && apt-get install -y --no-install-recommends \
       wazuh-indexer=4.12.0-1 \
       wazuh-manager=4.12.0-1 \
       filebeat=7.10.2-1 \
