@@ -1,9 +1,11 @@
-# Generated TLS certificates (created by generate-indexer-certs.yml on first run).
-# Regenerate with: docker compose -f generate-indexer-certs.yml run --rm generator
-# NOTE: if deploying to a PaaS that won't run setup.sh, you may need to commit
-# these instead — see README "Deploying on a PaaS".
-config/wazuh_indexer_ssl_certs/
+# Lab TLS certs ARE committed so the stack deploys with a single `docker compose up`
+# (see README "Deploying on a PaaS"). They are throwaway self-signed certs for a
+# training lab only. The CA private key is NOT needed at runtime, so keep it out:
+config/wazuh_indexer_ssl_certs/root-ca.key
+config/wazuh_indexer_ssl_certs/*.srl
 
 # OS / editor noise
 .DS_Store
 *.swp
+__pycache__/
+*.pyc

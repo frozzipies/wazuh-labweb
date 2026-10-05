@@ -100,17 +100,24 @@ docker compose down -v   # wipe indexed data
 ## Deploying on a PaaS
 
 This is a **multi-container** lab, so you need a platform that runs a Docker
-Compose project (or a VPS with Docker). Notes:
+Compose project (or a VPS with Docker).
 
-- **VPS / self-managed Docker host** — works as-is. Run `./setup.sh`. Make sure
-  `vm.max_map_count=262144` is set on the host (add it to `/etc/sysctl.conf` to
-  persist). Open ports **443** (dashboard) and optionally **9200**.
-- **Railway / Render / similar** — import the repo as a Docker Compose project.
-  You must generate the certs **before** deploying (run step 2 of *Manual start*
-  locally and commit `config/wazuh_indexer_ssl_certs/`, or run the generator as
-  a pre-deploy job), because these platforms don't run `setup.sh` for you. Set
-  `vm.max_map_count` via the platform's host settings if available; some managed
-  hosts set it high enough already.
+> **TLS certs are already committed** in `config/wazuh_indexer_ssl_certs/`, so a
+> plain `docker compose up -d --build` works out of the box — no pre-step. They
+> are throwaway self-signed lab certs (demo-grade, do not reuse in production).
+> Rotate them any time with `bash tools/gen-certs-openssl.sh`.
+
+Notes per platform:
+
+- **VPS / self-managed Docker host** — `./setup.sh` (or just
+  `docker compose up -d --build`). Ensure `vm.max_map_count=262144` on the host
+  (add it to `/etc/sysctl.conf` to persist). Open port **443** (dashboard) and
+  optionally **9200**.
+- **Railway / Render / ngelinx / similar** — point the platform at this repo as
+  a Docker Compose project and deploy; the committed certs mean no pre-deploy
+  job is required. If the platform lets you set kernel params, set
+  `vm.max_map_count=262144`; many managed hosts already set it high enough.
+  Expose the dashboard service (container port **5601**, published as 443).
 - **Memory** — if your host is tight on RAM, lower the indexer heap in
   `docker-compose.yml`:
   `OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m` (fine for this small dataset).
