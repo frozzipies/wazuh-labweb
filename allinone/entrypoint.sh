@@ -76,7 +76,7 @@ INDEXER_USERNAME="admin" INDEXER_PASSWORD="${ADMIN_PW}" WAIT_FOR_TEMPLATE="false
   python3 /opt/seeder/seed.py || log "seeder reported an error (check logs above)."
 
 log "=========================================================================="
-log " Wazuh all-in-one is up. Dashboard: https://<host>:5601  (admin / ${ADMIN_PW})"
+log " Wazuh all-in-one is up. Dashboard: HTTP on port 5601 (behind the PaaS proxy); login admin / ${ADMIN_PW}"
 log " Discover -> index pattern wazuh-alerts-* -> Last 24 hours."
 log "=========================================================================="
 
