@@ -1,0 +1,9 @@
+# Generated TLS certificates (created by generate-indexer-certs.yml on first run).
+# Regenerate with: docker compose -f generate-indexer-certs.yml run --rm generator
+# NOTE: if deploying to a PaaS that won't run setup.sh, you may need to commit
+# these instead — see README "Deploying on a PaaS".
+config/wazuh_indexer_ssl_certs/
+
+# OS / editor noise
+.DS_Store
+*.swp

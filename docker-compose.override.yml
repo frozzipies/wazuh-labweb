@@ -1,0 +1,17 @@
+# SOC Lab overlay - adds the training-data seeder on top of the stock Wazuh
+# single-node stack (docker-compose.yml). Docker Compose merges this file
+# automatically, so `docker compose up` brings up Wazuh AND seeds the dataset.
+
+services:
+  wazuh.seeder:
+    build: ./seeder
+    image: soc-lab/wazuh-seeder:1.0
+    hostname: wazuh.seeder
+    restart: "no"              # one-shot job: seed the data, then exit
+    environment:
+      - INDEXER_URL=https://wazuh.indexer:9200
+      - INDEXER_USERNAME=admin
+      - INDEXER_PASSWORD=SecretPassword
+      - WAIT_FOR_TEMPLATE=true
+    depends_on:
+      - wazuh.indexer
