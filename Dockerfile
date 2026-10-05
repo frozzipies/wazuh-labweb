@@ -8,7 +8,10 @@
 #  For a VPS or any platform that runs Docker Compose, prefer docker-compose.yml
 #  (lighter to operate, closer to a real deployment).
 # =============================================================================
-FROM ubuntu:22.04
+# Debian (glibc) base - required for Wazuh's .deb packages. Smaller than ubuntu,
+# which also tends to pull more reliably. (Alpine is NOT usable: musl libc + apk
+# are incompatible with Wazuh packages.)
+FROM debian:12-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 
