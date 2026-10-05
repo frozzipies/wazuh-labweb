@@ -13,7 +13,7 @@ All the evidence is in Wazuh. Your job is to reconstruct what happened.
 
 | | |
 |---|---|
-| **Dashboard** | https://localhost (accept the self-signed certificate warning) |
+| **Dashboard** | the URL your instructor gives you (local: https://localhost:5601) — accept the self-signed certificate warning |
 | **Username** | `admin` |
 | **Password** | `SecretPassword` |
 

@@ -42,12 +42,12 @@ docker compose logs -f wazuh.seeder
 # [+] Done. 278 alerts loaded. Open the dashboard and explore index pattern `wazuh-alerts-*`.
 ```
 
-Then open **https://localhost** → log in → **Discover** → index pattern
-**`wazuh-alerts-*`** → time range **Last 24 hours**.
+Then open **https://localhost:5601** (VPS) or your ngelinx domain → log in →
+**Discover** → index pattern **`wazuh-alerts-*`** → time range **Last 24 hours**.
 
 | Dashboard | Username | Password |
 |---|---|---|
-| https://localhost | `admin` | `SecretPassword` |
+| https://localhost:5601 (or your ngelinx domain) | `admin` | `SecretPassword` |
 
 > ⚠️ These are **insecure demo credentials for a throwaway training lab only.**
 > Do not expose this stack to the public internet or reuse the passwords.
@@ -74,7 +74,7 @@ single-node stack) with `docker-compose.override.yml` (our seeder).
 |---|---|---|
 | `wazuh.indexer` | `wazuh/wazuh-indexer:4.12.0` | OpenSearch data store (port 9200) |
 | `wazuh.manager` | `wazuh/wazuh-manager:4.12.0` | Analysis engine + API |
-| `wazuh.dashboard` | `wazuh/wazuh-dashboard:4.12.0` | Web UI (port 443) |
+| `wazuh.dashboard` | `wazuh/wazuh-dashboard:4.12.0` | Web UI (HTTPS, port 5601) |
 | `wazuh.seeder` | built from `./seeder` | **One-shot**: loads the attack dataset, then exits |
 
 The seeder waits for the indexer to be healthy, bulk-loads the dataset into
@@ -107,17 +107,34 @@ Compose project (or a VPS with Docker).
 > are throwaway self-signed lab certs (demo-grade, do not reuse in production).
 > Rotate them any time with `bash tools/gen-certs-openssl.sh`.
 
-Notes per platform:
+### ngelinx.com (and other Dokploy/Coolify-style PaaS)
 
-- **VPS / self-managed Docker host** — `./setup.sh` (or just
-  `docker compose up -d --build`). Ensure `vm.max_map_count=262144` on the host
-  (add it to `/etc/sysctl.conf` to persist). Open port **443** (dashboard) and
-  optionally **9200**.
-- **Railway / Render / ngelinx / similar** — point the platform at this repo as
-  a Docker Compose project and deploy; the committed certs mean no pre-deploy
-  job is required. If the platform lets you set kernel params, set
-  `vm.max_map_count=262144`; many managed hosts already set it high enough.
-  Expose the dashboard service (container port **5601**, published as 443).
+These platforms default to a **single-container Nixpacks build**, which will
+**fail** on this repo (there's no single app to build). You must pick the
+**Docker Compose** deployment type instead:
+
+1. **New service → choose "Docker Compose"** (not "Application"/Nixpacks).
+2. Connect the repo `ginasahel/labweb`, branch `main`.
+3. **Compose path:** `docker-compose.yml` (the seeder in
+   `docker-compose.override.yml` is merged automatically).
+4. **Deploy.** First build pulls the Wazuh images + builds the seeder
+   (~2–4 min). The `wazuh.seeder` container will show as *exited* once done —
+   that's expected (it's a one-shot loader).
+5. **Expose the UI:** in the service's **Domains** tab, add your domain →
+   service **`wazuh.dashboard`** → **port 5601** → **backend protocol HTTPS**
+   (the dashboard serves TLS itself; enable "skip TLS verify" if offered, since
+   the cert is self-signed).
+6. Open the domain → log in `admin` / `SecretPassword`.
+
+> If the indexer crash-loops with a `max virtual memory areas vm.max_map_count`
+> error, set `vm.max_map_count=262144` in ngelinx's host/kernel settings. Give
+> the app **~4 GB RAM** (or lower the heap — see below).
+
+### VPS / self-managed Docker host
+
+`./setup.sh` (or `docker compose up -d --build`). Ensure
+`vm.max_map_count=262144` on the host (add to `/etc/sysctl.conf` to persist),
+then browse **https://&lt;host&gt;:5601**.
 - **Memory** — if your host is tight on RAM, lower the indexer heap in
   `docker-compose.yml`:
   `OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m` (fine for this small dataset).

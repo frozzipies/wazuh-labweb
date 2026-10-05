@@ -47,7 +47,7 @@ cat <<'EOF'
 
   First boot takes ~2-4 minutes (indexer init + data seeding).
 
-  Dashboard : https://localhost       (maps to container port 443)
+  Dashboard : https://localhost:5601   (dashboard serves HTTPS on 5601)
   Login     : admin / SecretPassword
 
   Watch the dataset load:
