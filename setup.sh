@@ -45,9 +45,9 @@ cat <<'EOF'
 ============================================================================
   Wazuh SOC training lab is starting.
 
-  First boot takes ~2-4 minutes (indexer init + data seeding).
+  First boot takes ~1-2 minutes (indexer init + data seeding).
 
-  Dashboard : https://localhost:5601   (dashboard serves HTTPS on 5601)
+  Dashboard : https://localhost:5601
   Login     : admin / SecretPassword
 
   Watch the dataset load:

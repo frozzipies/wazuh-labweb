@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wazuh · Discover</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#1a1b20;--bg-panel:#1D1E24;--bg-side:#25262e;--bg-input:#141519;
+  --bg-row-a:#1a1b20;--bg-row-b:#1D1E24;--bg-hover:#25262e;--bg-expand:#141519;
+  --border:#343741;--text:#DFE5EF;--text-sub:#98A2B3;--text-dim:#69707D;
+  --pri:#36A2EF;--pri-dk:#006DE4;--accent:#7DE2D1;
+  --warn:#F5A700;--danger:#FF6666;--orange:#FF8C00;--green:#00BFB3;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Helvetica,Arial,sans-serif}
+a{color:var(--pri);text-decoration:none}
+
+/* HEADER */
+.header{display:flex;align-items:center;height:48px;background:var(--bg-panel);border-bottom:1px solid var(--border);padding:0 16px;gap:12px}
+.header svg{width:24px;height:24px;fill:var(--pri)}
+.header .logo{font-weight:700;font-size:16px;letter-spacing:.5px}
+.header .nav{margin-left:24px;display:flex;gap:4px}
+.header .nav span{padding:6px 12px;border-radius:4px;color:var(--text-sub);font-size:13px;cursor:pointer}
+.header .nav span.active{background:var(--bg);color:var(--text)}
+.header .tag{margin-left:auto;background:#2a2b32;color:var(--text-dim);font-size:11px;padding:2px 8px;border-radius:3px}
+
+/* SEARCH BAR */
+.search-area{display:flex;align-items:center;gap:8px;padding:8px 16px;border-bottom:1px solid var(--border);background:var(--bg-panel)}
+.search-input{flex:1;background:var(--bg-input);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:8px 12px;font-size:13px;font-family:inherit;outline:none}
+.search-input:focus{border-color:var(--pri)}
+.search-input::placeholder{color:var(--text-dim)}
+.time-pick{background:var(--bg-input);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:8px 12px;font-size:13px;cursor:pointer;font-family:inherit}
+.btn{background:var(--pri-dk);color:#fff;border:none;border-radius:4px;padding:8px 16px;font-size:13px;cursor:pointer;font-family:inherit}
+.btn:hover{background:var(--pri)}
+
+/* FILTERS */
+.filter-bar{display:flex;flex-wrap:wrap;gap:4px;padding:6px 16px;border-bottom:1px solid var(--border);min-height:0}
+.filter-bar:empty{display:none;padding:0;border:none}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:3px;font-size:12px;background:rgba(54,162,239,.15);border:1px solid rgba(54,162,239,.3);color:var(--pri)}
+.pill.neg{background:rgba(255,102,102,.12);border-color:rgba(255,102,102,.3);color:var(--danger)}
+.pill .x{cursor:pointer;opacity:.6;font-weight:700}.pill .x:hover{opacity:1}
+
+/* LAYOUT */
+.main{display:flex;height:calc(100vh - 48px - 45px);overflow:hidden}
+.main.has-filters{height:calc(100vh - 48px - 45px - 33px)}
+.sidebar{width:240px;min-width:240px;border-right:1px solid var(--border);overflow-y:auto;background:var(--bg-panel)}
+.content{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+
+/* SIDEBAR */
+.side-hdr{padding:10px 12px;font-size:12px;font-weight:600;color:var(--text-sub);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.field-list{list-style:none}
+.field-item{padding:5px 12px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;border-bottom:1px solid rgba(52,55,65,.4)}
+.field-item:hover{background:var(--bg-hover)}
+.field-item .fname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+.field-item .ftype{font-size:10px;color:var(--text-dim);background:var(--bg);padding:1px 5px;border-radius:2px}
+.field-item .fadd{font-size:16px;color:var(--pri);opacity:0;cursor:pointer;font-weight:700}.field-item:hover .fadd{opacity:1}
+
+/* FIELD POPOVER */
+.field-pop{position:fixed;z-index:100;background:var(--bg-panel);border:1px solid var(--border);border-radius:6px;padding:12px;width:260px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.field-pop h4{font-size:12px;color:var(--text-sub);margin-bottom:8px}
+.field-pop .val-row{display:flex;align-items:center;gap:6px;padding:3px 0;font-size:13px;cursor:pointer}
+.field-pop .val-row:hover{color:var(--pri)}
+.field-pop .val-bar{height:4px;border-radius:2px;background:var(--pri)}
+.field-pop .val-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.field-pop .val-count{color:var(--text-dim);font-size:12px}
+.field-pop .filter-btns{display:flex;gap:4px;opacity:0}
+.field-pop .val-row:hover .filter-btns{opacity:1}
+.field-pop .fbtn{width:18px;height:18px;display:flex;align-items:center;justify-content:center;border-radius:3px;font-size:11px;font-weight:700;cursor:pointer}
+.field-pop .fbtn.pos{background:rgba(54,162,239,.15);color:var(--pri)}
+.field-pop .fbtn.neg{background:rgba(255,102,102,.1);color:var(--danger)}
+
+/* HISTOGRAM */
+.histogram{padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg-panel)}
+.hist-label{font-size:12px;color:var(--text-sub);margin-bottom:6px}
+.hist-bars{display:flex;align-items:flex-end;gap:2px;height:64px}
+.hist-bar{flex:1;background:var(--pri);border-radius:2px 2px 0 0;min-height:1px;cursor:pointer;transition:background .15s}
+.hist-bar:hover{background:#50b4ff}
+.hist-axis{display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim);margin-top:4px}
+
+/* HITS */
+.hits-bar{padding:8px 16px;font-size:13px;color:var(--text-sub);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.hits-bar strong{color:var(--text)}
+
+/* TABLE */
+.table-wrap{flex:1;overflow:auto}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+thead th{position:sticky;top:0;background:var(--bg-panel);padding:8px 10px;font-size:12px;font-weight:600;color:var(--text-sub);text-align:left;border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap;user-select:none;z-index:2}
+thead th:hover{color:var(--text)}
+thead th .sort-arrow{font-size:10px;margin-left:4px;opacity:.5}
+thead th.sorted .sort-arrow{opacity:1;color:var(--pri)}
+tbody tr{border-bottom:1px solid rgba(52,55,65,.3)}
+tbody tr:nth-child(odd){background:var(--bg-row-a)}
+tbody tr:nth-child(even){background:var(--bg-row-b)}
+tbody tr:hover{background:var(--bg-hover)}
+tbody td{padding:6px 10px;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:top}
+td.expand-toggle{width:28px;text-align:center;cursor:pointer;color:var(--text-dim);font-size:16px}
+td.expand-toggle:hover{color:var(--pri)}
+.col-ts{width:170px}
+.col-level{width:60px}
+
+/* LEVEL BADGE */
+.lvl{display:inline-block;padding:1px 8px;border-radius:3px;font-size:12px;font-weight:600;text-align:center;min-width:28px}
+.lvl-low{background:rgba(54,162,239,.15);color:var(--pri)}
+.lvl-med{background:rgba(245,167,0,.15);color:var(--warn)}
+.lvl-high{background:rgba(255,140,0,.15);color:var(--orange)}
+.lvl-crit{background:rgba(255,102,102,.18);color:var(--danger)}
+
+/* EXPANDED ROW */
+tr.detail-row{background:var(--bg-expand)!important}
+tr.detail-row td{white-space:normal;padding:0}
+.detail-wrap{padding:12px 16px;max-height:400px;overflow-y:auto}
+.detail-table{width:100%;border-collapse:collapse}
+.detail-table td{padding:4px 8px;font-size:12px;border-bottom:1px solid rgba(52,55,65,.3);vertical-align:top}
+.detail-table .dk{width:200px;color:var(--pri);font-family:"SF Mono",Monaco,Consolas,monospace;white-space:nowrap}
+.detail-table .dv{color:var(--text);font-family:"SF Mono",Monaco,Consolas,monospace;word-break:break-all}
+.detail-table tr:hover{background:var(--bg-hover)}
+.detail-table .d-filter{opacity:0;cursor:pointer;font-size:11px;padding:1px 4px;border-radius:2px;margin-left:4px}
+.detail-table tr:hover .d-filter{opacity:.6}
+.detail-table .d-filter:hover{opacity:1}
+.detail-table .d-plus{background:rgba(54,162,239,.15);color:var(--pri)}
+.detail-table .d-minus{background:rgba(255,102,102,.1);color:var(--danger)}
+
+/* PAGINATION */
+.pager{display:flex;align-items:center;justify-content:center;gap:8px;padding:8px;border-top:1px solid var(--border);background:var(--bg-panel)}
+.pager button{background:var(--bg-input);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:4px 12px;cursor:pointer;font-size:13px;font-family:inherit}
+.pager button:disabled{opacity:.3;cursor:default}
+.pager button:not(:disabled):hover{border-color:var(--pri)}
+.pager span{font-size:13px;color:var(--text-sub)}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:#4a4d56}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .sidebar{display:none}
+  .header .nav{display:none}
+  .search-area{flex-wrap:wrap}
+}
+
+/* STATUS CODE COLORS */
+.sc-200{color:var(--green)}.sc-403,.sc-400{color:var(--warn)}.sc-404{color:var(--text-dim)}.sc-500{color:var(--danger)}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <svg viewBox="0 0 512 512"><path d="M256 32C132.3 32 32 132.3 32 256s100.3 224 224 224 224-100.3 224-224S379.7 32 256 32zm0 400c-97 0-176-79-176-176S159 80 256 80s176 79 176 176-79 176-176 176zm-16-304v144l124 74 12-20-108-64V128h-28z"/></svg>
+  <span class="logo">Wazuh</span>
+  <div class="nav">
+    <span>Modules</span>
+    <span class="active">Discover</span>
+    <span>Agents</span>
+  </div>
+  <span class="tag">SOC Training Lab</span>
+</div>
+
+<div class="search-area">
+  <input class="search-input" id="searchInput" type="text" placeholder='Search alerts... e.g. data.srcip : "203.0.113.77" and rule.level >= 10' spellcheck="false">
+  <select class="time-pick" id="timeRange">
+    <option value="1h">Last 1 hour</option>
+    <option value="6h">Last 6 hours</option>
+    <option value="12h">Last 12 hours</option>
+    <option value="24h" selected>Last 24 hours</option>
+    <option value="all">All time</option>
+  </select>
+  <button class="btn" id="refreshBtn">Refresh</button>
+</div>
+
+<div class="filter-bar" id="filterBar"></div>
+
+<div class="main" id="mainLayout">
+  <div class="sidebar" id="sidebar">
+    <div class="side-hdr">Available Fields <span id="fieldCount"></span></div>
+    <ul class="field-list" id="fieldList"></ul>
+  </div>
+  <div class="content">
+    <div class="histogram">
+      <div class="hist-label" id="histLabel">Events over time</div>
+      <div class="hist-bars" id="histBars"></div>
+      <div class="hist-axis" id="histAxis"></div>
+    </div>
+    <div class="hits-bar" id="hitsBar">Loading...</div>
+    <div class="table-wrap">
+      <table>
+        <thead id="thead"></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="pager" id="pager"></div>
+  </div>
+</div>
+
+<script>
+// ── State ──
+let allAlerts = [];
+let filtered = [];
+let filters = [];
+let columns = ['timestamp','rule.level','rule.description','data.srcip','data.url','data.id'];
+let sortField = 'timestamp';
+let sortDir = 'desc';
+let expanded = new Set();
+let page = 0;
+const PAGE_SIZE = 100;
+let allFields = [];
+let popEl = null;
+
+// ── Helpers ──
+function get(obj, path) {
+  const parts = path.split('.');
+  let v = obj;
+  for (const p of parts) {
+    if (v == null) return undefined;
+    v = v[p];
+  }
+  return v;
+}
+
+function flat(obj, prefix = '') {
+  const out = {};
+  for (const [k, v] of Object.entries(obj)) {
+    const key = prefix ? prefix + '.' + k : k;
+    if (key === '_ts') continue;
+    if (v && typeof v === 'object' && !Array.isArray(v)) {
+      Object.assign(out, flat(v, key));
+    } else {
+      out[key] = v;
+    }
+  }
+  return out;
+}
+
+function fmtTime(ts) {
+  const d = new Date(ts);
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+function fmtVal(v) {
+  if (Array.isArray(v)) return v.join(', ');
+  return v == null ? '-' : String(v);
+}
+
+function levelClass(l) {
+  if (l >= 12) return 'lvl-crit';
+  if (l >= 8) return 'lvl-high';
+  if (l >= 6) return 'lvl-med';
+  return 'lvl-low';
+}
+
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ── Search parser ──
+function matchesSearch(alert, query) {
+  if (!query.trim()) return true;
+  const parts = query.split(/\s+and\s+/i);
+  return parts.every(part => {
+    part = part.trim();
+    if (!part) return true;
+    let m;
+    m = part.match(/^([\w.@]+)\s*>=\s*(.+)$/);
+    if (m) { const v = get(alert, m[1]); return v !== undefined && Number(v) >= Number(m[2]); }
+    m = part.match(/^([\w.@]+)\s*<=\s*(.+)$/);
+    if (m) { const v = get(alert, m[1]); return v !== undefined && Number(v) <= Number(m[2]); }
+    m = part.match(/^([\w.@]+)\s*>\s*([^=].*)$/);
+    if (m) { const v = get(alert, m[1]); return v !== undefined && Number(v) > Number(m[2]); }
+    m = part.match(/^([\w.@]+)\s*<\s*([^=].*)$/);
+    if (m) { const v = get(alert, m[1]); return v !== undefined && Number(v) < Number(m[2]); }
+    m = part.match(/^([\w.@]+)\s*:\s*\*\s*$/);
+    if (m) { return get(alert, m[1]) !== undefined; }
+    m = part.match(/^([\w.@]+)\s*:\s*"([^"]*)"\s*$/);
+    if (m) {
+      const v = get(alert, m[1]);
+      if (v === undefined) return false;
+      const t = m[2].toLowerCase();
+      if (Array.isArray(v)) return v.some(x => String(x).toLowerCase().includes(t));
+      return String(v).toLowerCase().includes(t);
+    }
+    m = part.match(/^([\w.@]+)\s*:\s*(\S+)\s*$/);
+    if (m) {
+      const v = get(alert, m[1]);
+      if (v === undefined) return false;
+      const t = m[2].toLowerCase();
+      if (Array.isArray(v)) return v.some(x => String(x).toLowerCase().includes(t));
+      return String(v).toLowerCase().includes(t);
+    }
+    const lower = part.toLowerCase().replace(/"/g, '');
+    const f = flat(alert);
+    return Object.values(f).some(v => String(v).toLowerCase().includes(lower));
+  });
+}
+
+// ── Filters ──
+function matchesFilters(alert) {
+  return filters.every(f => {
+    const v = get(alert, f.field);
+    const sv = fmtVal(v);
+    const match = sv.toLowerCase().includes(f.value.toLowerCase()) || String(v).toLowerCase() === f.value.toLowerCase();
+    return f.negate ? !match : match;
+  });
+}
+
+function addFilter(field, value, negate = false) {
+  const exists = filters.some(f => f.field === field && f.value === value && f.negate === negate);
+  if (exists) return;
+  filters.push({ field, value: String(value), negate });
+  closePop();
+  applyAndRender();
+}
+
+function removeFilter(i) {
+  filters.splice(i, 1);
+  applyAndRender();
+}
+
+function renderFilters() {
+  const bar = document.getElementById('filterBar');
+  bar.innerHTML = filters.map((f, i) =>
+    `<span class="pill ${f.negate ? 'neg' : ''}">${f.negate ? 'NOT ' : ''}${escHtml(f.field)}: "${escHtml(f.value)}" <span class="x" onclick="removeFilter(${i})">&times;</span></span>`
+  ).join('');
+  document.getElementById('mainLayout').classList.toggle('has-filters', filters.length > 0);
+}
+
+// ── Time filter ──
+function timeFilter(alert) {
+  const range = document.getElementById('timeRange').value;
+  if (range === 'all') return true;
+  const hours = parseInt(range);
+  const cutoff = Date.now() - hours * 3600000;
+  return alert._ts >= cutoff;
+}
+
+// ── Apply filters and re-render ──
+function applyAndRender() {
+  const query = document.getElementById('searchInput').value;
+  filtered = allAlerts.filter(a => timeFilter(a) && matchesFilters(a) && matchesSearch(a, query));
+  if (sortField) {
+    filtered.sort((a, b) => {
+      let va = sortField === 'timestamp' ? a._ts : get(a, sortField);
+      let vb = sortField === 'timestamp' ? b._ts : get(b, sortField);
+      if (va == null) va = '';
+      if (vb == null) vb = '';
+      const na = Number(va), nb = Number(vb);
+      if (!isNaN(na) && !isNaN(nb)) return sortDir === 'asc' ? na - nb : nb - na;
+      return sortDir === 'asc' ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+    });
+  }
+  page = 0;
+  expanded.clear();
+  renderFilters();
+  renderHistogram();
+  renderHits();
+  renderTable();
+  renderPager();
+}
+
+// ── Histogram ──
+function renderHistogram() {
+  const barsEl = document.getElementById('histBars');
+  const axisEl = document.getElementById('histAxis');
+  if (!filtered.length) { barsEl.innerHTML = ''; axisEl.innerHTML = ''; return; }
+  const range = document.getElementById('timeRange').value;
+  let bucketCount = 24;
+  let now = Date.now();
+  let start;
+  if (range === 'all') {
+    start = Math.min(...filtered.map(a => a._ts));
+    now = Math.max(...filtered.map(a => a._ts)) + 1;
+  } else {
+    const hours = parseInt(range);
+    start = now - hours * 3600000;
+    if (hours <= 1) bucketCount = 12;
+    else if (hours <= 6) bucketCount = 18;
+  }
+  const span = now - start;
+  const bucketSize = span / bucketCount;
+  const buckets = new Array(bucketCount).fill(0);
+  for (const a of filtered) {
+    const i = Math.min(Math.floor((a._ts - start) / bucketSize), bucketCount - 1);
+    if (i >= 0) buckets[i]++;
+  }
+  const max = Math.max(...buckets, 1);
+  barsEl.innerHTML = buckets.map((c, i) =>
+    `<div class="hist-bar" style="height:${Math.max(c / max * 100, c ? 3 : 0)}%" title="${fmtTime(start + i * bucketSize)}: ${c} events"></div>`
+  ).join('');
+  const labels = [0, Math.floor(bucketCount / 4), Math.floor(bucketCount / 2), Math.floor(3 * bucketCount / 4), bucketCount - 1];
+  axisEl.innerHTML = labels.map(i => `<span>${fmtTime(start + i * bucketSize).slice(5)}</span>`).join('');
+}
+
+// ── Hits bar ──
+function renderHits() {
+  document.getElementById('hitsBar').innerHTML = `<strong>${filtered.length.toLocaleString()}</strong> hits`;
+}
+
+// ── Table ──
+function renderThead() {
+  const tr = document.createElement('tr');
+  tr.innerHTML = '<th style="width:28px"></th>';
+  for (const col of columns) {
+    const label = col === 'timestamp' ? 'Time' : col.split('.').pop();
+    const isSorted = sortField === col;
+    const arrow = isSorted ? (sortDir === 'asc' ? '&#9650;' : '&#9660;') : '&#9660;';
+    const cls = col === 'timestamp' ? 'col-ts' : col === 'rule.level' ? 'col-level' : '';
+    tr.innerHTML += `<th class="${cls} ${isSorted ? 'sorted' : ''}" data-col="${col}">${escHtml(label)} <span class="sort-arrow">${arrow}</span></th>`;
+  }
+  const thead = document.getElementById('thead');
+  thead.innerHTML = '';
+  thead.appendChild(tr);
+  thead.querySelectorAll('th[data-col]').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.col;
+      if (sortField === col) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+      else { sortField = col; sortDir = col === 'timestamp' ? 'desc' : 'asc'; }
+      applyAndRender();
+    });
+  });
+}
+
+function renderTable() {
+  renderThead();
+  const tbody = document.getElementById('tbody');
+  const startIdx = page * PAGE_SIZE;
+  const slice = filtered.slice(startIdx, startIdx + PAGE_SIZE);
+  let html = '';
+  for (let i = 0; i < slice.length; i++) {
+    const a = slice[i];
+    const gi = startIdx + i;
+    const isExp = expanded.has(gi);
+    html += `<tr class="${isExp ? 'expanded' : ''}" data-idx="${gi}">`;
+    html += `<td class="expand-toggle" onclick="toggleRow(${gi})">${isExp ? '&#9660;' : '&#9654;'}</td>`;
+    for (const col of columns) {
+      let v = col === 'timestamp' ? fmtTime(a._ts) : get(a, col);
+      if (col === 'rule.level') {
+        const n = Number(v);
+        html += `<td><span class="lvl ${levelClass(n)}">${n}</span></td>`;
+      } else if (col === 'data.id') {
+        const sc = String(v);
+        html += `<td class="sc-${sc}">${escHtml(sc)}</td>`;
+      } else {
+        html += `<td title="${escHtml(fmtVal(v))}">${escHtml(fmtVal(v))}</td>`;
+      }
+    }
+    html += '</tr>';
+    if (isExp) {
+      html += `<tr class="detail-row"><td colspan="${columns.length + 1}"><div class="detail-wrap"><table class="detail-table">`;
+      const fields = flat(a);
+      for (const [k, v] of Object.entries(fields).sort((a, b) => a[0].localeCompare(b[0]))) {
+        const sv = fmtVal(v);
+        html += `<tr>
+          <td class="dk">${escHtml(k)}</td>
+          <td class="dv">${escHtml(sv)}
+            <span class="d-filter d-plus" onclick="event.stopPropagation();addFilter('${escHtml(k)}','${escHtml(sv)}')" title="Filter for">+</span>
+            <span class="d-filter d-minus" onclick="event.stopPropagation();addFilter('${escHtml(k)}','${escHtml(sv)}',true)" title="Filter out">&minus;</span>
+          </td></tr>`;
+      }
+      html += '</table></div></td></tr>';
+    }
+  }
+  tbody.innerHTML = html;
+}
+
+function toggleRow(idx) {
+  if (expanded.has(idx)) expanded.delete(idx); else expanded.add(idx);
+  renderTable();
+}
+
+// ── Pager ──
+function renderPager() {
+  const total = Math.ceil(filtered.length / PAGE_SIZE);
+  if (total <= 1) { document.getElementById('pager').innerHTML = ''; return; }
+  document.getElementById('pager').innerHTML = `
+    <button ${page === 0 ? 'disabled' : ''} onclick="page=0;renderTable();renderPager();">&laquo;</button>
+    <button ${page === 0 ? 'disabled' : ''} onclick="page--;renderTable();renderPager();">&lsaquo; Prev</button>
+    <span>${page + 1} / ${total}</span>
+    <button ${page >= total - 1 ? 'disabled' : ''} onclick="page++;renderTable();renderPager();">Next &rsaquo;</button>
+    <button ${page >= total - 1 ? 'disabled' : ''} onclick="page=${total - 1};renderTable();renderPager();">&raquo;</button>`;
+}
+
+// ── Sidebar ──
+function buildFieldList() {
+  const fieldSet = new Set();
+  for (const a of allAlerts) {
+    for (const k of Object.keys(flat(a))) fieldSet.add(k);
+  }
+  allFields = [...fieldSet].sort();
+  document.getElementById('fieldCount').textContent = allFields.length;
+  const ul = document.getElementById('fieldList');
+  ul.innerHTML = allFields.map(f => {
+    const isNum = allAlerts.some(a => { const v = get(a, f); return v !== undefined && !isNaN(Number(v)) && typeof v !== 'boolean'; });
+    return `<li class="field-item" data-field="${escHtml(f)}">
+      <span class="ftype">${isNum ? '#' : 't'}</span>
+      <span class="fname">${escHtml(f)}</span>
+      <span class="fadd" onclick="event.stopPropagation();addColumn('${escHtml(f)}')" title="Add column">+</span>
+    </li>`;
+  }).join('');
+  ul.querySelectorAll('.field-item').forEach(li => {
+    li.addEventListener('click', e => {
+      if (e.target.classList.contains('fadd')) return;
+      showFieldPop(li.dataset.field, li);
+    });
+  });
+}
+
+function addColumn(field) {
+  if (columns.includes(field)) return;
+  columns.splice(columns.length - 1, 0, field);
+  renderTable();
+}
+
+// ── Field popover ──
+function closePop() { if (popEl) { popEl.remove(); popEl = null; } }
+
+function showFieldPop(field, anchor) {
+  closePop();
+  const counts = {};
+  for (const a of filtered) {
+    let v = get(a, field);
+    if (v === undefined) continue;
+    if (Array.isArray(v)) v.forEach(x => { const s = String(x); counts[s] = (counts[s] || 0) + 1; });
+    else { const s = String(v); counts[s] = (counts[s] || 0) + 1; }
+  }
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const maxC = sorted.length ? sorted[0][1] : 1;
+  const div = document.createElement('div');
+  div.className = 'field-pop';
+  div.innerHTML = `<h4>${escHtml(field)}</h4>` + sorted.map(([val, cnt]) =>
+    `<div class="val-row" onclick="addFilter('${escHtml(field)}','${escHtml(val)}')">
+      <span class="val-label">${escHtml(val)}</span>
+      <span class="val-count">${cnt}</span>
+      <div class="filter-btns">
+        <span class="fbtn pos" onclick="event.stopPropagation();addFilter('${escHtml(field)}','${escHtml(val)}')" title="Filter for">+</span>
+        <span class="fbtn neg" onclick="event.stopPropagation();addFilter('${escHtml(field)}','${escHtml(val)}',true)" title="Filter out">&minus;</span>
+      </div>
+    </div>`
+  ).join('');
+  const rect = anchor.getBoundingClientRect();
+  div.style.left = (rect.right + 8) + 'px';
+  div.style.top = Math.min(rect.top, window.innerHeight - 300) + 'px';
+  document.body.appendChild(div);
+  popEl = div;
+}
+
+document.addEventListener('click', e => {
+  if (popEl && !popEl.contains(e.target) && !e.target.closest('.field-item')) closePop();
+});
+
+// ── Init ──
+document.getElementById('searchInput').addEventListener('keydown', e => { if (e.key === 'Enter') applyAndRender(); });
+document.getElementById('refreshBtn').addEventListener('click', applyAndRender);
+document.getElementById('timeRange').addEventListener('change', applyAndRender);
+
+fetch('alerts.json')
+  .then(r => r.json())
+  .then(data => {
+    const genTime = new Date(data.generated_at).getTime();
+    const offset = Date.now() - genTime;
+    allAlerts = data.alerts.map(a => {
+      const origTs = a.timestamp.replace('+0000', 'Z');
+      const ts = new Date(origTs).getTime() + offset;
+      const d = new Date(ts);
+      const iso = d.toISOString().replace('Z', '+0000');
+      return { ...a, timestamp: iso, '@timestamp': iso, _ts: ts };
+    });
+    buildFieldList();
+    applyAndRender();
+  })
+  .catch(err => {
+    document.getElementById('hitsBar').innerHTML = `<span style="color:var(--danger)">Failed to load alerts: ${err.message}</span>`;
+  });
+</script>
+</body>
+</html>
